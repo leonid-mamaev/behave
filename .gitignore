@@ -26,3 +26,4 @@ tools/virtualenvs
 nosetests.xml
 rerun.txt
 testrun*.json
+venv
