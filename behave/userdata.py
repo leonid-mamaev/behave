@@ -19,14 +19,8 @@ def parse_bool(text):
 
     :raises: ValueError, if text is invalid
     """
-    # -- BASED ON: distutils.util.strtobool (deprecated; removed in Python 3.12)
-    text = text.lower().strip()
-    if text in ("yes", "true", "on", "1"):
-        return True
-    elif text in ("no", "false", "off", "0"):
-        return False
-    else:
-        raise ValueError("invalid truth value: %r" % (text,))
+    from distutils.util import strtobool
+    return bool(strtobool(text))
 
 
 def parse_user_define(text):

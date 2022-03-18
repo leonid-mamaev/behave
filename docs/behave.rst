@@ -55,11 +55,6 @@ You may see the same information presented below at any time using ``behave
 
     Directory in which to store JUnit reports.
 
-.. option:: --runner-class
-
-    This allows you to use your own custom runner. The default is 
-    ``behave.runner.Runner``.
-
 .. option:: -f, --format
 
     Specify a formatter. If none is specified the default formatter is
@@ -100,9 +95,9 @@ You may see the same information presented below at any time using ``behave
 
 .. option:: -n, --name
 
-    Select feature elements (scenarios, ...) to run which match part of
-    the given name (regex pattern). If this option is given more than
-    once, it will match against all the given names.
+    Only execute the feature elements which match part of the given name.
+    If this option is given more than once, it will match against all
+    the given names.
 
 .. option:: --no-capture
 
@@ -255,34 +250,33 @@ You may see the same information presented below at any time using ``behave
 Tag Expression
 --------------
 
-Scenarios inherit tags that are declared on the Feature level.
-The simplest TAG_EXPRESSION is simply a tag::
+Scenarios inherit tags declared on the Feature level. The simplest
+TAG_EXPRESSION is simply a tag::
 
-    --tags=@dev
+    --tags @dev
 
 You may even leave off the "@" - behave doesn't mind.
 
-You can also exclude all features / scenarios that have a tag,
-by using boolean NOT::
+When a tag in a tag expression starts with a ~, this represents boolean NOT::
 
-    --tags="not @dev"
+    --tags ~@dev
 
-A tag expression can also use a logical OR::
+A tag expression can have several tags separated by a comma, which represents
+logical OR::
 
-    --tags="@dev or @wip"
+    --tags @dev,@wip
 
-The --tags option can be specified several times,
-and this represents logical AND,
-for instance this represents the boolean expression::
+The --tags option can be specified several times, and this represents logical
+AND, for instance this represents the boolean expression
+"(@foo or not @bar) and @zap"::
 
-    --tags="(@foo or not @bar) and @zap"
+    --tags @foo,~@bar --tags @zap.
 
-You can also exclude several tags::
+Beware that if you want to use several negative tags to exclude several tags
+you have to use logical AND::
 
-    --tags="not (@fixme or @buggy)"
+    --tags ~@fixme --tags ~@buggy.
 
-
-.. _docid.behave.configuration-files:
 
 Configuration Files
 ===================
@@ -329,11 +323,12 @@ The following types are supported (and used):
 
     .. code-block:: ini
 
-        default_tags= (@foo or not @bar) and @zap
+        tags=@foo,~@bar
+            @zap
 
     which is the equivalent of the command-line usage::
 
-        --tags="(@foo or not @bar) and @zap"
+        --tags @foo,~@bar --tags @zap
 
 
 
@@ -454,9 +449,9 @@ Configuration Parameters
 
 .. describe:: name : sequence<text>
 
-    Select feature elements (scenarios, ...) to run which match part of
-    the given name (regex pattern). If this option is given more than
-    once, it will match against all the given names.
+    Only execute the feature elements which match part of the given name.
+    If this option is given more than once, it will match against all
+    the given names.
 
 .. index::
     single: configuration param; stdout_capture
@@ -588,7 +583,7 @@ Configuration Parameters
 .. index::
     single: configuration param; default_tags
 
-.. describe:: default_tags : sequence<text>
+.. describe:: default_tags : text
 
     Define default tags when non are provided. See --tags for more
     information.

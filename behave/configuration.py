@@ -8,14 +8,13 @@ import re
 import sys
 import shlex
 import six
-from importlib import import_module
 from six.moves import configparser
 
 from behave.model import ScenarioOutline
 from behave.model_core import FileLocation
 from behave.reporter.junit import JUnitReporter
 from behave.reporter.summary import SummaryReporter
-from behave.tag_expression import make_tag_expression
+from behave.tag_expression import TagExpression
 from behave.formatter.base import StreamOpener
 from behave.formatter import _registry as _format_registry
 from behave.userdata import UserData, parse_user_define
@@ -63,29 +62,22 @@ class LogLevel(object):
         return logging.getLevelName(level)
 
 
+class ConfigError(Exception):
+    pass
+
+
 # -----------------------------------------------------------------------------
 # CONFIGURATION SCHEMA:
 # -----------------------------------------------------------------------------
-
-def valid_python_module(path):
-    try:
-        module_path, class_name = path.rsplit('.', 1)
-        module = import_module(module_path)
-        return getattr(module, class_name)
-    except (ValueError, AttributeError, ImportError):
-        raise argparse.ArgumentTypeError("No module named '%s' was found." % path)
-
-
 options = [
     (("-c", "--no-color"),
      dict(action="store_false", dest="color",
           help="Disable the use of ANSI color escapes.")),
 
     (("--color",),
-     dict(dest="color", choices=["never", "always", "auto"],
-          default=os.getenv('BEHAVE_COLOR'), const="auto", nargs="?",
-          help="""Use ANSI color escapes. Defaults to %(const)r.
-                  This switch is used to override a
+     dict(action="store_true", dest="color",
+          help="""Use ANSI color escapes. This is the default
+                  behaviour. This switch is used to override a
                   configuration file setting.""")),
 
     (("-d", "--dry-run"),
@@ -123,11 +115,6 @@ options = [
      dict(metavar="PATH", dest="junit_directory",
           default="reports",
           help="""Directory in which to store JUnit reports.""")),
-
-    (("--runner-class",),
-     dict(action="store",
-          default="behave.runner.Runner", type=valid_python_module,
-          help="Tells Behave to use a specific runner. (default: %(default)s)")),
 
     ((),  # -- CONFIGFILE only
      dict(dest="default_format",
@@ -181,11 +168,11 @@ options = [
                   override a configuration file setting.""")),
 
     (("-n", "--name"),
-     dict(action="append", metavar="NAME_PATTERN",
-          help="""Select feature elements (scenarios, ...) to run
-                  which match part of the given name (regex pattern).
-                  If this option is given more than once,
-                  it will match against all the given names.""")),
+     dict(action="append",
+          help="""Only execute the feature elements which match part
+                  of the given name. If this option is given more
+                  than once, it will match against all the given
+                  names.""")),
 
     (("--no-capture",),
      dict(action="store_false", dest="stdout_capture",
@@ -312,7 +299,7 @@ options = [
     #    help="Fail if there are any undefined or pending steps.")),
 
     ((),  # -- CONFIGFILE only
-     dict(dest="default_tags", metavar="TAG_EXPRESSION", action="append",
+     dict(dest="default_tags", metavar="TAG_EXPRESSION",
           help="""Define default tags when non are provided.
                   See --tags for more information.""")),
 
@@ -507,7 +494,7 @@ class Configuration(object):
     """Configuration object for behave and behave runners."""
     # pylint: disable=too-many-instance-attributes
     defaults = dict(
-        color='never' if sys.platform == "win32" else os.getenv('BEHAVE_COLOR', 'auto'),
+        color=sys.platform != "win32",
         show_snippets=True,
         show_skipped=True,
         dry_run=False,
@@ -562,16 +549,6 @@ class Configuration(object):
             # -- AUTO-DISCOVER: Verbose mode from command-line args.
             verbose = ("-v" in command_args) or ("--verbose" in command_args)
 
-        # Allow commands like `--color features/whizbang.feature` to work
-        # Without this, argparse will treat the positional arg as the value to
-        # --color and we'd get:
-        #   argument --color: invalid choice: 'features/whizbang.feature'
-        #   (choose from 'never', 'always', 'auto')
-        if '--color' in command_args:
-            color_arg_pos = command_args.index('--color')
-            if os.path.exists(command_args[color_arg_pos + 1]):
-                command_args.insert(color_arg_pos + 1, '--')
-
         self.version = None
         self.tags_help = None
         self.lang_list = None
@@ -611,23 +588,13 @@ class Configuration(object):
                 continue
             setattr(self, key, value)
 
-        # -- ATTRIBUTE-NAME-CLEANUP:
-        self.tag_expression = None
-        self._tags = self.tags
-        self.tags = None
-        if isinstance(self.default_tags, six.string_types):
-            self.default_tags = self.default_tags.split()
-
         self.paths = [os.path.normpath(path) for path in self.paths]
         self.setup_outputs(args.outfiles)
 
         if self.steps_catalog:
             # -- SHOW STEP-CATALOG: As step summary.
             self.default_format = "steps.catalog"
-            if self.format:
-                self.format.append("steps.catalog")
-            else:
-                self.format = ["steps.catalog"]
+            self.format = ["steps.catalog"]
             self.dry_run = True
             self.summary = False
             self.show_skipped = False
@@ -640,15 +607,13 @@ class Configuration(object):
             #  * do not capture stdout or logging output and
             #  * stop at the first failure.
             self.default_format = "plain"
-            self._tags = ["wip"] + self.default_tags
+            self.tags = ["wip"] + self.default_tags.split()
             self.color = False
             self.stop = True
             self.log_capture = False
             self.stdout_capture = False
 
-        self.tag_expression = make_tag_expression(self._tags or self.default_tags)
-        # -- BACKWARD-COMPATIBLE (BAD-NAMING STYLE; deprecating):
-        self.tags = self.tag_expression
+        self.tags = TagExpression(self.tags or self.default_tags.split())
 
         if self.quiet:
             self.show_source = False

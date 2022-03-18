@@ -15,6 +15,12 @@ To update an already installed :pypi:`behave` version, use:
 
     pip install -U behave
 
+As an alternative,
+you can also use :pypi:`easy_install <setuptools>` to install :pypi:`behave`::
+
+    easy_install behave         # CASE: New installation.
+    easy_install -U behave      # CASE: Upgrade existing installation.
+
 
 .. hint::
 
@@ -31,14 +37,11 @@ enter the newly created directory "behave-<version>" and run::
 
     python setup.py install
 
-    # OR:
-    pip install .
-
 
 Using the Github Repository
 ---------------------------
 
-:Category: Bleeding edge
+:Category: Bleading edge
 :Precondition: :pypi:`pip` is installed
 
 Run the following command
@@ -55,21 +58,3 @@ where <tag> is the placeholder for an `existing tag`_.
 
 .. _`Github repository`: https://github.com/behave/behave
 .. _`existing tag`:      https://github.com/behave/behave/tags
-
-
-Optional Dependencies
----------------------
-
-If needed, additional dependencies can be installed using ``pip install``
-with one of the following installation targets.
-
-==================== ===================================================================
-Installation Target  Description
-==================== ===================================================================
-behave[docs]         Include packages needed for building Behave's documentation.
-behave[develop]      Optional packages helpful for local development.
-behave[formatters]   Install formatters from `behave-contrib`_ to extend the list of
-                     :ref:`id.appendix.formatters<formatters>` provided by default.
-==================== ===================================================================
-
-.. _`behave-contrib`: https://github.com/behave-contrib

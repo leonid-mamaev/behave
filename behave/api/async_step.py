@@ -54,7 +54,6 @@ try:
 except ImportError:
     has_asyncio = False
 
-
 # -----------------------------------------------------------------------------
 # ASYNC STEP DECORATORS:
 # -----------------------------------------------------------------------------
@@ -86,7 +85,7 @@ def async_run_until_complete(astep_func=None, loop=None, timeout=None,
         loop (asyncio.EventLoop):   Event loop to use or None.
         timeout (int, float):       Timeout to wait for async-step completion.
         async_context (name):       Async_context name or object to use.
-        should_close (bool):        Indicates if event loop should be closed.
+        should_close (bool):        Indicates if event lopp should be closed.
 
     .. note::
 
@@ -130,10 +129,6 @@ def async_run_until_complete(astep_func=None, loop=None, timeout=None,
                 done, pending = loop.run_until_complete(
                     asyncio.wait([task], timeout=timeout))
                 assert not pending, "TIMEOUT-OCCURED: timeout=%s" % timeout
-                finished_task = done.pop()
-                exception = finished_task.exception()
-                if exception:
-                    raise exception
         finally:
             if loop and should_close:
                 # -- MAYBE-AVOID:
@@ -157,16 +152,13 @@ def async_run_until_complete(astep_func=None, loop=None, timeout=None,
         # -- CASE: @decorator ... or astep = decorator(astep)
         # MAYBE: return functools.partial(step_decorator, astep_func=astep_func)
         assert callable(astep_func)
-
         @functools.wraps(astep_func)
         def wrapped_decorator(context, *args, **kwargs):
             return step_decorator(astep_func, context, *args, **kwargs)
         return wrapped_decorator
 
-
 # -- ALIAS:
 run_until_complete = async_run_until_complete
-
 
 # -----------------------------------------------------------------------------
 # ASYNC STEP UTILITY CLASSES:
@@ -228,8 +220,7 @@ class AsyncContext(object):
     default_name = "async_context"
 
     def __init__(self, loop=None, name=None, should_close=False, tasks=None):
-        # DISABLED: loop = asyncio.get_event_loop() or asyncio.new_event_loop()
-        self.loop = use_or_create_event_loop(loop)
+        self.loop = loop or asyncio.get_event_loop() or asyncio.new_event_loop()
         self.tasks = tasks or []
         self.name = name or self.default_name
         self.should_close = should_close
@@ -247,22 +238,6 @@ class AsyncContext(object):
 # -----------------------------------------------------------------------------
 # ASYNC STEP UTILITY FUNCTIONS:
 # -----------------------------------------------------------------------------
-def use_or_create_event_loop(loop=None):
-    if loop:
-        # -- USE: Supplied event loop.
-        return loop
-
-    # -- NORMAL CASE: Try to use the current event loop or create a new one.
-    try:
-        # -- SINCE: Python 3.7
-        return asyncio.get_running_loop()
-    except RuntimeError:
-        return asyncio.new_event_loop()
-    except AttributeError:
-        # -- BACKWARD-COMPATIBLE: For Python < 3.7
-        return asyncio.get_event_loop()
-
-
 def use_or_create_async_context(context, name=None, loop=None, **kwargs):
     """Utility function to be used in step implementations to ensure that an
     :class:`AsyncContext` object is stored in the :param:`context` object.

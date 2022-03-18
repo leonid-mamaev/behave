@@ -6,10 +6,13 @@ for the model elements in behave.
 
 import os.path
 import sys
+from enum import Enum
+
 import six
 from behave.capture import Captured
 from behave.textutil import text as _text
-from enum import Enum
+
+
 
 
 PLATFORM_WIN = sys.platform.startswith("win")
@@ -89,7 +92,8 @@ class Status(Enum):
 
 
 class Argument(object):
-    """An argument found in a *feature file* step name.
+    """An argument found in a *feature file* step name and extracted using
+    step decorator `parameters`_.
 
     The attributes are:
 
@@ -103,8 +107,8 @@ class Argument(object):
 
     .. attribute:: name
 
-       The name of the argument.
-       This will be None if the parameter is anonymous.
+       The name of the argument. This will be None if the parameter is
+       anonymous.
 
     .. attribute:: start
 
@@ -361,9 +365,8 @@ class TagAndStatusStatement(BasicStatement):
     # final_status = ('passed', 'failed', 'skipped')
     final_status = (Status.passed, Status.failed, Status.skipped)
 
-    def __init__(self, filename, line, keyword, name, tags, parent=None):
+    def __init__(self, filename, line, keyword, name, tags):
         super(TagAndStatusStatement, self).__init__(filename, line, keyword, name)
-        self.parent = parent    # Container for this entity; None for feature.
         self.tags = tags
         self.should_skip = False
         self.skip_reason = None

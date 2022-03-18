@@ -22,14 +22,6 @@ Use the following URL to  find `behave`_ related projects on Github:
 * https://github.com/topics/behave?l=python
 
 
-Behave related Projects to pypi.org
-------------------------------------------------------------------------------
-
-Use the following URL to  find `behave`_ related projects on the new pypi
-repository (supersedes: ``https://pypi.python.org``):
-
-* https://pypi.org/search/?q=behave
-
 
 IDE Plugins
 ------------------------------------------------------------------------------
@@ -44,8 +36,8 @@ IDE             Plugin              Description
 =============== =================== ======================================================================================
 
 .. _PyCharm:        https://www.jetbrains.com/pycharm/
-.. _Eclipse:        https://www.eclipse.org/
-.. _VisualStudio:   https://visualstudio.microsoft.com/
+.. _Eclipse:        http://www.eclipse.org/
+.. _VisualStudio:   https://www.visualstudio.com/
 
 .. _`PyCharm BDD`: https://blog.jetbrains.com/pycharm/2014/09/feature-spotlight-behavior-driven-development-in-pycharm/
 .. _`Cucumber-Eclipse`: http://cucumber.github.io/cucumber-eclipse/
@@ -81,10 +73,10 @@ Editor              Plugin                  Description
 
 .. _`Notepad++`: https://notepad-plus-plus.org/
 .. _gedit:  https://wiki.gnome.org/Apps/Gedit
-.. _vim:    https://www.vim.org/
+.. _vim:    http://www.vim.org/
 .. _`Sublime Text`:    http://www.sublimetext.com
 
-.. _`Gherkin editor`: https://archive.codeplex.com/?p=gherkineditor
+.. _`Gherkin editor`: http://gherkineditor.codeplex.com
 .. _gedit_behave:   https://gitlab.com/mcepl/gedit_behave
 .. _`NP++ gherkin`: http://productive.me/develop/cucumbergherkin-syntax-highlighting-for-notepad
 .. _vim-behave:     https://github.com/rooprob/vim-behave

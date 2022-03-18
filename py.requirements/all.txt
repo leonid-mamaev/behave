@@ -12,4 +12,5 @@
 
 -r basic.txt
 -r develop.txt
+-r more_py26.txt
 -r json.txt

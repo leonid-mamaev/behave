@@ -9,10 +9,6 @@ import pytest
 import codecs
 import six
 
-
-pytest_version = pytest.__version__
-
-
 # -----------------------------------------------------------------------------
 # TEST SUPPORT:
 # -----------------------------------------------------------------------------
@@ -50,7 +46,6 @@ class ConvertableToUnicode(object):
         __unicode__ = __str__
         __str__ = lambda self: self.__unicode__().encode(self.encoding)
 
-
 class ConvertableToString(object):
     encoding = "utf-8"
 
@@ -73,7 +68,6 @@ class ConvertableToString(object):
             if isinstance(text, six.text_type):
                 text = codecs.encode(text, self.encoding)
             return text
-
 
 class ConvertableToPy2String(object):
     encoding = "utf-8"
@@ -218,11 +212,9 @@ class TestObjectToTextConversion(object):
         with pytest.raises(AssertionError) as e:
             assert False, message
 
-        # -- FOR: pytest < 5.0
-        # expected = u"AssertionError: %s" % message
-        text2 = text(e.value)
-        assert u"AssertionError" in text(e)
-        assert message in text2, "OOPS: text=%r" % text2
+        text2 = text(e)
+        expected = u"AssertionError: %s" % message
+        assert text2.endswith(expected)
 
     @requires_python2
     @pytest.mark.parametrize("message", [
@@ -231,22 +223,12 @@ class TestObjectToTextConversion(object):
     def test_text__with_assert_failed_and_bytes_message(self, message):
         # -- ONLY PYTHON2: Use case makes no sense for Python 3.
         bytes_message = message.encode(self.ENCODING)
-        decode_error_occured = False
         with pytest.raises(AssertionError) as e:
-            try:
-                assert False, bytes_message
-            except UnicodeDecodeError as uni_error:
-                # -- SINCE: Python 2.7.15
-                decode_error_occured = True
-                expected_decode_error = "'ascii' codec can't decode byte 0xc3 in position 0"
-                assert expected_decode_error in str(uni_error)
-                assert False, bytes_message.decode(self.ENCODING)
+            assert False, bytes_message
 
-        # -- FOR: pytest < 5.0
-        # expected = u"AssertionError: %s" % message
-        print("decode_error_occured(ascii)=%s" % decode_error_occured)
-        text2 = text(e.value)
-        assert message in text2, "OOPS: text=%r" % text2
+        text2 = text(e)
+        expected = u"AssertionError: %s" % message
+        assert text2.endswith(expected)
 
     @pytest.mark.parametrize("exception_class, message", [
         (AssertionError, u"Ärgernis"),
@@ -258,16 +240,12 @@ class TestObjectToTextConversion(object):
         with pytest.raises(exception_class) as e:
             raise exception_class(message)
 
-        # -- FOR: pytest < 5.0
-        # expected = u"AssertionError: %s" % message
-        text2 = text(e.value)
+        text2 = text(e)
         expected = u"%s: %s" % (exception_class.__name__, message)
         assert isinstance(text2, six.text_type)
-        assert exception_class.__name__ in str(e)
-        assert message in text2, "OOPS: text=%r" % text2
+        assert text2.endswith(expected)
 
     @requires_python2
-    @pytest.mark.skipif(pytest_version >= "5.0", reason="Fails with pytest 5.0")
     @pytest.mark.parametrize("exception_class, message", [
         (AssertionError, u"Ärgernis"),
         (RuntimeError, u"Übermütig"),
@@ -279,15 +257,10 @@ class TestObjectToTextConversion(object):
         with pytest.raises(exception_class) as e:
             raise exception_class(bytes_message)
 
-        # -- REQUIRES: pytest < 5.0
-        # HINT: pytest >= 5.0 needs: text(e.value)
-        # NEW:  text2 = text(e.value)   # Causes problems w/ decoding and comparison.
-        assert isinstance(e.value, Exception)
         text2 = text(e)
         unicode_message = bytes_message.decode(self.ENCODING)
         expected = u"%s: %s" % (exception_class.__name__, unicode_message)
         assert isinstance(text2, six.text_type)
-        assert unicode_message in text2
         assert text2.endswith(expected)
         # -- DIAGNOSTICS:
         print(u"text2: "+ text2)

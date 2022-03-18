@@ -7,16 +7,12 @@ build/
 dist/
 __pycache__/
 __WORKDIR__/
-__*/
-__*.txt
-__*.rst
 _build/
 _WORKSPACE/
 reports/
 tools/virtualenvs
 .cache/
 .idea/
-.pytest_cache/
 .tox/
 .venv*/
 .vscode/
@@ -25,5 +21,3 @@ tools/virtualenvs
 .ropeproject
 nosetests.xml
 rerun.txt
-testrun*.json
-venv

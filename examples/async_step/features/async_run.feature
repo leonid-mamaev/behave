@@ -1,5 +1,6 @@
-@use.with_python_has_async_function=true
-@use.with_python_has_asyncio.coroutine_decorator=true
+@use.with_python.version=3.4
+@use.with_python.version=3.5
+@use.with_python.version=3.6
 Feature:
   Scenario:
     Given an async-step waits 0.3 seconds

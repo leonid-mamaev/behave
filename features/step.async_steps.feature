@@ -1,5 +1,4 @@
 @not.with_python2=true
-@use.with_python_has_coroutine=true
 Feature: Async-Test Support (async-step, ...)
 
   As a test writer and step provider
@@ -17,11 +16,11 @@ Feature: Async-Test Support (async-step, ...)
   .    * an async-function as coroutine using async/await keywords (Python 3.5)
   .    * an async-function tagged with @asyncio.coroutine and using "yield from"
   .
-  .  # -- EXAMPLE CASE 1 (since Python 3.5; preferred):
+  .  # -- EXAMPLE CASE 1 (since Python 3.5):
   .  async def coroutine1(duration):
   .      await asyncio.sleep(duration)
   .
-  .  # -- EXAMPLE CASE 2 (since Python 3.4; deprecated since Python 3.8; removed in Python 3.10):
+  .  # -- EXAMPLE CASE 2 (since Python 3.4):
   .  @asyncio.coroutine
   .  def coroutine2(duration):
   .      yield from asyncio.sleep(duration)
@@ -31,8 +30,9 @@ Feature: Async-Test Support (async-step, ...)
   .   The async-step can directly interact with other async-functions.
 
 
-    @use.with_python_has_async_function=true
-    Scenario: Use async-step with @async_run_until_complete (async; requires: py.version >= 3.5)
+    @use.with_python.version=3.5
+    @use.with_python.version=3.6
+    Scenario: Use async-step with @async_run_until_complete (async)
       Given a new working directory
       And a file named "features/steps/async_steps35.py" with:
         """
@@ -60,8 +60,10 @@ Feature: Async-Test Support (async-step, ...)
         """
 
 
-    @use.with_python_has_asyncio.coroutine_decorator=true
-    Scenario: Use async-step with @async_run_until_complete (@asyncio.coroutine)
+    @use.with_python.version=3.4
+    @use.with_python.version=3.5
+    @use.with_python.version=3.6
+    Scenario: Use async-step with @async_run_until_complete (@coroutine)
       Given a new working directory
       And a file named "features/steps/async_steps34.py" with:
         """
@@ -89,8 +91,9 @@ Feature: Async-Test Support (async-step, ...)
              Given an async-step waits 0.3 seconds ... passed in 0.3
         """
 
-    @use.with_python_has_async_function=true
-    Scenario: Use @async_run_until_complete(timeout=...) and TIMEOUT occurs (async-function)
+    @use.with_python.version=3.5
+    @use.with_python.version=3.6
+    Scenario: Use @async_run_until_complete(timeout=...) and TIMEOUT occurs (async)
       Given a new working directory
       And a file named "features/steps/async_steps_timeout35.py" with:
         """
@@ -123,90 +126,10 @@ Feature: Async-Test Support (async-step, ...)
         Assertion Failed: TIMEOUT-OCCURED: timeout=0.1
         """
 
-    @use.with_python_has_async_function=true
-    @async_step_fails
-    Scenario: Use @async_run_until_complete and async-step fails (async-function)
-      Given a new working directory
-      And a file named "features/steps/async_steps_fails35.py" with:
-        """
-        from behave import step
-        from behave.api.async_step import async_run_until_complete
-
-        @step('an async-step passes')
-        @async_run_until_complete
-        async def step_async_step_passes(context):
-            pass
-
-        @step('an async-step fails')
-        @async_run_until_complete
-        async def step_async_step_fails(context):
-            assert False, "XFAIL in async-step"
-        """
-      And a file named "features/async_failure.feature" with:
-        """
-        Feature:
-          Scenario:
-            Given an async-step passes
-            When an async-step fails
-            Then an async-step passes
-        """
-      When I run "behave -f plain features/async_failure.feature"
-      Then it should fail with:
-        """
-        1 step passed, 1 failed, 1 skipped, 0 undefined
-        """
-      And the command output should contain:
-        """
-        When an async-step fails ... failed
-        """
-      And the command output should contain:
-        """
-        Assertion Failed: XFAIL in async-step
-        """
-
-    @use.with_python_has_async_function=true
-    @async_step_fails
-    Scenario: Use @async_run_until_complete and async-step raises error (async-function)
-      Given a new working directory
-      And a file named "features/steps/async_steps_exception35.py" with:
-        """
-        from behave import step
-        from behave.api.async_step import async_run_until_complete
-
-        @step('an async-step passes')
-        @async_run_until_complete
-        async def step_async_step_passes(context):
-            pass
-
-        @step('an async-step raises an exception')
-        @async_run_until_complete
-        async def step_async_step_raises_exception(context):
-            raise RuntimeError("XFAIL in async-step")
-        """
-      And a file named "features/async_exception35.feature" with:
-        """
-        Feature:
-          Scenario:
-            Given an async-step passes
-            When an async-step raises an exception
-            Then an async-step passes
-        """
-      When I run "behave -f plain features/async_exception35.feature"
-      Then it should fail with:
-        """
-        1 step passed, 1 failed, 1 skipped, 0 undefined
-        """
-      And the command output should contain:
-        """
-        When an async-step raises an exception ... failed
-        """
-      And the command output should contain:
-        """
-        raise RuntimeError("XFAIL in async-step")
-        """
-
-    @use.with_python_has_asyncio.coroutine_decorator=true
-    Scenario: Use @async_run_until_complete(timeout=...) and TIMEOUT occurs (@asyncio.coroutine)
+    @use.with_python.version=3.4
+    @use.with_python.version=3.5
+    @use.with_python.version=3.6
+    Scenario: Use @async_run_until_complete(timeout=...) and TIMEOUT occurs (@coroutine)
       Given a new working directory
       And a file named "features/steps/async_steps_timeout34.py" with:
         """
@@ -240,8 +163,10 @@ Feature: Async-Test Support (async-step, ...)
         Assertion Failed: TIMEOUT-OCCURED: timeout=0.2
         """
 
-    @use.with_python_has_asyncio.coroutine_decorator=true
-    Scenario: Use async-dispatch and async-collect concepts (@asyncio.coroutine)
+    @use.with_python.version=3.4
+    @use.with_python.version=3.5
+    @use.with_python.version=3.6
+    Scenario: Use async-dispatch and async-collect concepts
       Given a new working directory
       And a file named "features/steps/async_dispatch_steps.py" with:
         """

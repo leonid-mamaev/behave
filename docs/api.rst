@@ -50,18 +50,18 @@ implementation code:
 
 .. code-block:: python
 
-    @given(u'some known state')
+    @given('some known state')
     def step_impl(context):
-        setup_something(some, state)
+        set_up(some, state)
 
 
 will match the "Given" step from the following feature:
 
 .. code-block:: gherkin
 
-    Scenario: test something
-      Given some known state
-      Then  some observed outcome.
+ Scenario: test something
+  Given some known state
+   then some observed outcome.
 
 *You don't need to import the decorators*: they're automatically available
 to your step implementation modules as `global variables`_.
@@ -73,20 +73,20 @@ the name of their preceding keyword, so given the following feature file:
 
 .. code-block:: gherkin
 
-    Given some known state
-      And some other known state
-     When some action is taken
-     Then some outcome is observed
-      But some other outcome is not observed.
+  Given some known state
+    and some other known state
+   when some action is taken
+   then some outcome is observed
+    but some other outcome is not observed.
 
 the first "and" step will be renamed internally to "given" and *behave*
 will look for a step implementation decorated with either "given" or "step":
 
 .. code-block:: python
 
-    @given(u'some other known state')
+    @given('some other known state')
     def step_impl(context):
-        setup_something(some, other, state)
+        set_up(some, other, state)
 
 and similarly the "but" would be renamed internally to "then". Multiple
 "and" or "but" steps in a row would inherit the non-"and" or "but" keyword.
@@ -99,10 +99,12 @@ variable. Additional arguments come from `step parameters`_, if any.
 Step Parameters
 ---------------
 
-You may additionally use :ref:`parameters <docid.tutorial.step-parameters>` in your step names. These will be
+You may additionally use `parameters`_ in your step names. These will be
 handled by either the default simple parser (:pypi:`parse`),
 its extension "cfparse" or by regular expressions
 if you invoke :func:`~behave.use_step_matcher`.
+
+.. _`parameters`: tutorial.html#step-parameters
 
 
 .. autofunction:: behave.use_step_matcher
@@ -120,14 +122,11 @@ You may add new types to the default parser by invoking
     .. code-block:: python
 
         from behave import register_type
-        def convert_string_to_upper_case(text):
-            return text.upper
-        register_type(ToUpperCase=convert_string_to_upper_case)
+        register_type(custom=lambda s: s.upper())
 
-        @given(u'a string {param:ToUpperCase} a custom type')
+        @given('a string {param:custom} a custom type')
         def step_impl(context, param):
             assert param.isupper()
-
 
 You may define a new parameter matcher by subclassing
 :class:`behave.matchers.Matcher` and registering it with
@@ -142,11 +141,8 @@ name" to :class:`~behave.matchers.Matcher` class.
 .. autoclass:: behave.matchers.Match
 
 
-.. _docid.api.execute-steps:
-.. _docid.api.calling-steps-from-other-steps:
-
-Step Macro: Calling Steps From Other Steps
-------------------------------------------
+Calling Steps From Other Steps
+------------------------------
 
 If you find you'd like your step implementation to invoke another step you
 may do so with the :class:`~behave.runner.Context` method
@@ -156,15 +152,15 @@ This function allows you to, for example:
 
 .. code-block:: python
 
-    @when(u'I do the same thing as before with the {color:w} button')
-    def step_impl(context, color):
+    @when('I do the same thing as before')
+    def step_impl(context):
         context.execute_steps(u'''
-            When I press the big {color} button
-             And I duck
-        '''.format(color=color))
+            when I press the big red button
+             and I duck
+        ''')
 
-This will cause the "when I do the same thing as before with the red button" step
-to execute the other two steps as though they had also appeared in the scenario file.
+This will cause the "when I do the same thing as before" step to execute
+the other two steps as though they had also appeared in the scenario file.
 
 
 from behave import *
@@ -196,47 +192,37 @@ Environment File Functions
 The environment.py module may define code to run before and after certain
 events during your testing:
 
-**before_all(context), after_all(context)**
-  These run before and after the whole shooting match.
-
-**before_feature(context, feature), after_feature(context, feature)**
-  These run before and after each feature is executed.
-  The feature object, that is passed in, is an instance of :class:`~behave.model.Feature`.
-
-**before_rule(context, rule), after_rule(context, rule)**
-  These run before and after each rule is execured.
-  The rule object, that is passed in, is an instance of :class:`~behave.model.Rule`.
+**before_step(context, step), after_step(context, step)**
+  These run before and after every step. The step passed in is an instance
+  of :class:`~behave.model.Step`.
 
 **before_scenario(context, scenario), after_scenario(context, scenario)**
-  These run before and after each scenario is run.
-  The scenario object, that is passed in, is an instance of :class:`~behave.model.Scenario`.
+  These run before and after each scenario is run. The scenario passed in is an
+  instance of :class:`~behave.model.Scenario`.
 
-**before_step(context, step), after_step(context, step)**
-  These run before and after every step.
-  The step object, that is passed in, is an instance of :class:`~behave.model.Step`.
+**before_feature(context, feature), after_feature(context, feature)**
+  These run before and after each feature file is exercised. The feature
+  passed in is an instance of :class:`~behave.model.Feature`.
 
 **before_tag(context, tag), after_tag(context, tag)**
   These run before and after a section tagged with the given name. They are
   invoked for each tag encountered in the order they're found in the
-  feature file. See  :ref:`controlling things with tags`.
-
-  Taggable statements are: Feature, Rule, Scenario, ScenarioOutline, Examples.
-
-  The tag, that is passed in, is an instance of :class:`~behave.model.Tag` and
-  because it's a subclass of string you can do simple tests like:
+  feature file. See  :ref:`controlling things with tags`. The tag passed in is
+  an instance of :class:`~behave.model.Tag` and because it's a subclass of
+  string you can do simple tests like:
 
   .. code-block:: python
 
       # -- ASSUMING: tags @browser.chrome or @browser.any are used.
-      # BETTER: Use Fixture for this example.
-      def before_tag(context, tag):
-          if tag.startswith("browser."):
-              browser_type = tag.replace("browser.", "", 1)
-              if browser_type == "chrome":
-                  context.browser = webdriver.Chrome()
-              else:
-                  context.browser = webdriver.PlainVanilla()
+      if tag.startswith("browser."):
+          browser_type = tag.replace("browser.", "", 1)
+          if browser_type == "chrome":
+              context.browser = webdriver.Chrome()
+          else:
+              context.browser = webdriver.PlainVanilla()
 
+**before_all(context), after_all(context)**
+  These run before and after the whole shooting match.
 
 
 Some Useful Environment Ideas
@@ -319,87 +305,42 @@ Use Fixtures
 Runner Operation
 ================
 
-The execution of code is based on the Gherkin description in `*.feature` files.
-The following section provides a short overview of the hierarchical containment
-that is possible in the Gherkin grammer:
+Given all the code that could be run by *behave*, this is the order in
+which that code is invoked (if they exist.)
 
 .. parsed-literal::
 
-    # -- SIMPLIFIED GHERKIN GRAMMAR (for Gherkin v6):
-    # CARDINALITY DECORATOR: '*' means 0..N (many), '?' means 0..1 (optional)
-    # EXAMPLE: Feature
-    #   A Feature can have many Tags (as TaggableStatement: zero or more tags before its keyword).
-    #   A Feature can have an optional Background.
-    #   A Feature can have many Scenario(s), meaning zero or more Scenarios.
-    #   A Feature can have many ScenarioOutline(s).
-    #   A Feature can have many Rule(s).
-    Feature(TaggableStatement):
-        Background?
-        Scenario*
-        ScenarioOutline*
-        Rule*
-
-    Background:
-        Step*           # Background steps are injected into any Scenario of its scope.
-
-    Scenario(TaggableStatement):
-        Step*
-
-    ScenarioOutline(ScenarioTemplateWithPlaceholders):
-        Scenario*       # Rendered Template by using ScenarioOutline.Examples.rows placeholder values.
-
-    Rule(TaggableStatement):
-        Background?     # Behave-specific extension (after removal from final Gherkin v6).
-        Scenario*
-        ScenarioOutline*
-
-
-Given all the code that could be run by *behave*,
-this is the order in which that code is invoked (if they exist.)
-
-.. parsed-literal::
-
-    # -- PSEUDO-CODE:
-    # HOOK: before_tag(), after_tag() is called for Feature, Rule, Scenario
-    ctx = createContext()
-    call-optional-hook before_all(ctx)
+    before_all
     for feature in all_features:
-        for tag in feature.tags: call-optional-hook before_tag(ctx, tag)
-        call-optional-hook before_feature(ctx, feature)
-        for run_item in feature.run_items:  # CAN BE: Rule, Scenario, ScenarioOutline
-            execute_run_item(run_item, ctx)
-        call-optional-hook after_feature(ctx, feature)
-        for tag in feature.tags: call-optional-hook after_tag(ctx, tag)
-    call-optional-hook after_all(ctx)
-
-    function execute_run_item(run_item, ctx):
-        if run_item isa Rule:
-            # -- CASE: Rule
-            rule = run_item
-            for tag in rule.tags: call-optional-hook before_tag(ctx, tag)
-            call-optional-hook before_rule(ctx, rule)
-            for run_item in rule.run_items:     # CAN BE: Scenario, ScenarioOutline
-                execute_run_item(run_item, ctx)
-            call-optional-hook after_rule(ctx, rule)
-            for tag in rule.tags: call-optional-hook after_tag(ctx, tag)
-        else if run_item isa ScenarioOutline:
-            # -- CASE: ScenarioOutline
-            # HINT: All Scenarios are already created from Example(s) rows.
-            scenario_outline = run_item
-            for scenario in scenario_outline.scenarios:
-                execute_run_item(scenario, ctx)
-        else if run_item isa Scenario:
-            # -- CASE: Scenario
-            # HINT: Background steps are injected before scenario steps.
-            scenario = run_item
-            for tag in scenario.tags: call-optional-hook before_tag(ctx, tag)
-            call-optional-hook before_scenario(ctx, scenario)
+        before_feature
+        for scenario in feature.scenarios:
+            before_scenario
             for step in scenario.steps:
-                call-optional-hook before_step(ctx, step)
-                step.run(ctx)
-                call-optional-hook after_step(ctx, step)
-            call-optional-hook after_scenario(ctx, scenario)
-            for tag in scenario.tags: call-optional-hook after_tag(ctx, tag)
+                before_step
+                    step.run()
+                after_step
+            after_scenario
+        after_feature
+    after_all
+
+If the feature contains scenario outlines then there is an additional loop
+over all the scenarios in the outline making the running look like this:
+
+.. parsed-literal::
+
+    before_all
+    for feature in all_features:
+        before_feature
+        for outline in feature.scenarios:
+            for scenario in outline.scenarios:
+                before_scenario
+                for step in scenario.steps:
+                    before_step
+                        step.run()
+                    after_step
+                after_scenario
+        after_feature
+    after_all
 
 
 Model Objects
@@ -449,8 +390,6 @@ be:
 
 
 .. autoclass:: behave.model.Feature
-
-.. autoclass:: behave.model.Rule
 
 .. autoclass:: behave.model.Background
 

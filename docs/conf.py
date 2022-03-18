@@ -3,7 +3,6 @@
 # SPHINX CONFIGURATION: behave documentation build configuration file
 # =============================================================================
 
-from __future__ import print_function
 import os.path
 import sys
 import importlib
@@ -13,13 +12,6 @@ import importlib
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath(".."))
-
-# ------------------------------------------------------------------------------
-# DETECT BUILD CONTEXT
-# ------------------------------------------------------------------------------
-ON_READTHEDOCS = os.environ.get("READTHEDOCS", None) == "True"
-USE_SPHINX_INTERNATIONAL = True
-
 
 # ------------------------------------------------------------------------------
 # EXTENSIONS CONFIGURATION
@@ -52,13 +44,11 @@ for optional_module_name in optional_extensions:
 
 
 extlinks = {
-    "pypi": ("https://pypi.org/project/%s", ""),
+    "pypi": ("https://pypi.python.org/pypi/%s", ""),
     "github": ("https://github.com/%s", "github:/"),
-    "issue":  ("https://github.com/behave/behave/issues/%s", "issue #"),
+    "issue":  ("https://github.com/behave/behave/issue/%s", "issue #"),
     "youtube": ("https://www.youtube.com/watch?v=%s", "youtube:video="),
     "behave": ("https://github.com/behave/behave", None),
-    "cucumber": ("https://github.com/cucumber/cucumber/", None),
-    "cucumber.issue": ("https://github.com/cucumber/cucumber/issues/%s", "issue #"),
 }
 
 intersphinx_mapping = {
@@ -89,26 +79,12 @@ source_encoding = "utf-8"
 # The master toctree document.
 master_doc = "index"
 
-# -- MULTI-LANGUAGE SUPPORT: en, ...
-# SEE: https://pypi.org/project/sphinx-intl/
-# SEE: https://github.com/sphinx-doc/sphinx-intl/
-if USE_SPHINX_INTERNATIONAL:
-    locale_dirs = ["locale/"]   # path is example but recommended.
-    gettext_compact = False     # optional.
-    print("USE SPHINX-INTL: locale_dirs=%s" % ",".join(locale_dirs))
-
-# STEPS:
-#   make gettext
-#       -- Create *.po files in "../build/docs/locale/"
-#   sphinx-intl update -p ../build/docs/locale -l de -l ja
-#       -- Create *.po files in "gettext/de/", "gettext/ja/" dirs.
-#
 # -----------------------------------------------------------------------------
 # GENERAL CONFIGURATION
 # -----------------------------------------------------------------------------
 project = u"behave"
-authors = u"Jens Engel, Benno Rice and Richard Jones"
-copyright = u"2012-2021, %s" % authors
+authors = u"Benno Rice, Richard Jones and Jens Engel"
+copyright = u"2012-2017, %s" % authors
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -166,7 +142,9 @@ todo_include_todos = False
 # a list of builtin themes.
 html_theme = "kr"
 html_theme = "bootstrap"
-if ON_READTHEDOCS:
+
+on_rtd = os.environ.get("READTHEDOCS", None) == "True"
+if on_rtd:
     html_theme = "default"
 
 if html_theme == "bootstrap":
@@ -260,7 +238,7 @@ html_file_suffix = ".html"
 # OPTIONS FOR: HTML HELP
 # ------------------------------------------------------------------------------
 # Output file base name for HTML help builder.
-htmlhelp_basename = "behave.doc"
+htmlhelp_basename = "behavedoc"
 
 
 # ------------------------------------------------------------------------------

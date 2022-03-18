@@ -8,6 +8,8 @@ from __future__ import absolute_import, print_function, with_statement
 import copy
 import re
 import warnings
+from inspect import signature
+
 import parse
 import six
 from parse_type import cfparse
@@ -46,7 +48,8 @@ class StepParseError(ValueError):
 # SECTION: Model Elements
 # -----------------------------------------------------------------------------
 class Match(Replayable):
-    """An parameter-matched step name extracted from a *feature file*.
+    """An parameter-matched *feature file* step name extracted using
+    step decorator `parameters`_.
 
     .. attribute:: func
 
@@ -93,8 +96,15 @@ class Match(Replayable):
             else:
                 args.append(arg.value)
 
+        step_signature = signature(self.func)
+        for param_name in step_signature.parameters:
+            if param_name == 'context':
+                kwargs[param_name] = context
+            if param_name not in kwargs:
+                kwargs[param_name] = context.get_param(param_name)
+
         with context.use_with_user_mode():
-            self.func(context, *args, **kwargs)
+            self.func(**kwargs)
 
     @staticmethod
     def make_location(step_function):
@@ -261,7 +271,9 @@ class CFParseMatcher(ParseMatcher):
 
 
 def register_type(**kw):
-    r"""Registers a custom type that will be available to "parse"
+    # pylint: disable=anomalous-backslash-in-string
+    # REQUIRED-BY: code example
+    """Registers a custom type that will be available to "parse"
     for type conversion during step matching.
 
     Converters should be supplied as ``name=callable`` arguments (or as dict).

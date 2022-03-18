@@ -6,12 +6,6 @@ USAGE:
     python setup.py install
     python setup.py behave_test     # -- XFAIL on Windows (currently).
     python setup.py nosetests
-
-REQUIRES:
-* setuptools >= 36.2.0
-
-SEE ALSO:
-* https://setuptools.readthedocs.io/en/latest/history.html
 """
 
 import sys
@@ -25,7 +19,6 @@ sys.path.insert(0, HERE)
 from setuptools import find_packages, setup
 from setuptools_behave import behave_test
 
-
 # -----------------------------------------------------------------------------
 # CONFIGURATION:
 # -----------------------------------------------------------------------------
@@ -33,7 +26,6 @@ python_version = float("%s.%s" % sys.version_info[:2])
 BEHAVE = os.path.join(HERE, "behave")
 README = os.path.join(HERE, "README.rst")
 description = "".join(open(README).readlines()[4:])
-
 
 # -----------------------------------------------------------------------------
 # UTILITY:
@@ -55,7 +47,7 @@ def find_packages_by_root_package(where):
 # -----------------------------------------------------------------------------
 setup(
     name="behave",
-    version="1.2.7.dev2",
+    version="1.2.6",
     description="behave is behaviour-driven development, Python style",
     long_description=description,
     author="Jens Engel, Benno Rice and Richard Jones",
@@ -73,56 +65,43 @@ setup(
         ]
     },
     # -- REQUIREMENTS:
-    # SUPPORT: python2.7, python3.3 (or higher)
-    python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*",
+    # SUPPORT: python2.6, python2.7, python3.3 (or higher)
+    python_requires=">=2.6, !=3.0.*, !=3.1.*, !=3.2.*",
     install_requires=[
-        "cucumber-tag-expressions >= 1.1.2",
-        "parse >= 1.18.0",
+        "parse >= 1.8.2",
         "parse_type >= 0.4.2",
-        "six >= 1.12.0",
+        "six >= 1.11",
+        "argparse; python_version < '2.7'",
+        "importlib; python_version < '2.7'",
+        "ordereddict; python_version < '2.7'",
         "traceback2; python_version < '3.0'",
         "enum34; python_version < '3.4'",
-        # -- PREPARED:
-        "win_unicode_console; python_version < '3.6'",
-        "colorama",
+        # PREPARED: "win_unicode_console; python_version < '3.6'",
+        # PREPARED: "colorama",
     ],
+    test_suite="nose.collector",
     tests_require=[
-        "pytest <  5.0; python_version <  '3.0'", # >= 4.2
-        "pytest >= 5.0; python_version >= '3.0'",
-        "pytest-html >= 1.19.0",
+        "pytest >= 3.0",
+        "nose >= 1.3",
         "mock >= 1.1",
-        "PyHamcrest >= 1.9",
-        # -- HINT: path.py => path (python-install-package was renamed for python3)
-        "path.py >= 11.5.0; python_version <  '3.5'",
-        "path >= 13.1.0;    python_version >= '3.5'",
+        "PyHamcrest >= 1.8",
+        "path.py >= 10.1"
     ],
     cmdclass = {
         "behave_test": behave_test,
     },
     extras_require={
-        "docs": [
-            "sphinx >= 1.6",
-            "sphinx_bootstrap_theme >= 0.6"
-        ],
-        "develop": [
-            "coverage",
-            "pytest >= 4.2",
-            "pytest-html >= 1.19.0",
-            "pytest-cov",
-            "tox",
-            "invoke >= 1.2.0",
-            "path.py >= 11.5.0",
-            "pycmd",
-            "pathlib; python_version <= '3.4'",
+        'docs': ["sphinx >= 1.6", "sphinx_bootstrap_theme >= 0.6"],
+        'develop': [
+            "coverage", "pytest >= 3.0", "pytest-cov", "tox",
+            "invoke >= 0.21.0", "path.py >= 8.1.2", "pycmd",
+            "pathlib",  # python_version <= '3.4'
             "modernize >= 0.5",
             "pylint",
         ],
-        'formatters': [
-            "behave-html-formatter",
-        ],
     },
-    # DISABLED: use_2to3= bool(python_version >= 3.0),
-    # DEPRECATED SINCE: setuptools v58.0.2 (2021-09-06)
+    # MAYBE-DISABLE: use_2to3
+    use_2to3= bool(python_version >= 3.0),
     license="BSD",
     classifiers=[
         "Development Status :: 4 - Beta",
@@ -130,13 +109,13 @@ setup(
         "Intended Audience :: Developers",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 2",
+        "Programming Language :: Python :: 2.6",
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.3",
+        "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: Jython",
         "Programming Language :: Python :: Implementation :: PyPy",
@@ -145,4 +124,5 @@ setup(
     ],
     zip_safe = True,
 )
+
 

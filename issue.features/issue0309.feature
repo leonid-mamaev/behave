@@ -30,35 +30,20 @@ Feature: Issue #309 -- behave --lang-list fails on Python3
     Then it should pass with:
         """
         Languages available:
-          af: Afrikaans / Afrikaans
-          am: հայերեն / Armenian
-          an: Aragonés / Aragonese
-          ar: العربية / Arabic
-          ast: asturianu / Asturian
-          az: Azərbaycanca / Azerbaijani
-          bg: български / Bulgarian
-          bm: Bahasa Melayu / Malay
-          bs: Bosanski / Bosnian
-          ca: català / Catalan
-          cs: Česky / Czech
-          cy-GB: Cymraeg / Welsh
-          da: dansk / Danish
-          de: Deutsch / German
-          el: Ελληνικά / Greek
-          em: 😀 / Emoji
-          en: English / English
+         ar: العربية / Arabic
+         bg: български / Bulgarian
+         ca: català / Catalan
+         cs: Česky / Czech
+         cy-GB: Cymraeg / Welsh
+         da: dansk / Danish
+         de: Deutsch / German
+         en: English / English
         """
     And the command output should contain:
         """
         sv: Svenska / Swedish
-        ta: தமிழ் / Tamil
-        te: తెలుగు / Telugu
-        th: ไทย / Thai
-        tlh: tlhIngan / Klingon
         tr: Türkçe / Turkish
-        tt: Татарча / Tatar
         uk: Українська / Ukrainian
-        ur: اردو / Urdu
         uz: Узбекча / Uzbek
         vi: Tiếng Việt / Vietnamese
         zh-CN: 简体中文 / Chinese simplified

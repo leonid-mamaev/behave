@@ -48,7 +48,7 @@ def test_issue(exception_class, message):
         raise_exception(exception_class, message)
 
     # -- SHOULD NOT RAISE EXCEPTION HERE:
-    text = _text(e.value)
+    text = _text(e)
     # -- DIAGNOSTICS:
     print(u"text"+ text)
     print(u"exception: %s" % e)

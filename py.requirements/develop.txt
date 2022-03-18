@@ -3,22 +3,18 @@
 # ============================================================================
 
 # -- BUILD-TOOL:
-invoke == 1.4.1
+# PREPARE USAGE: invoke
+# ALREADY: six >= 1.11.0
+invoke >= 0.21.0
+path.py >= 10.1
 pathlib;    python_version <= '3.4'
 pycmd
 
-# -- HINT: path.py => path (python-install-package was renamed for python3)
-path.py >= 11.5.0; python_version <  '3.5'
-path >= 13.1.0;    python_version >= '3.5'
-
 # -- CONFIGURATION MANAGEMENT (helpers):
-# FORMER: bumpversion >= 0.4.0
-bump2version >= 0.5.6
-
-# -- RELEASE MANAGEMENT: Push package to pypi.
-twine >= 1.13.0
+bumpversion >= 0.4.0
 
 # -- DEVELOPMENT SUPPORT:
+# PREPARED: nose-cov >= 1.4
 tox   >= 1.8.1
 coverage >= 4.2
 pytest-cov

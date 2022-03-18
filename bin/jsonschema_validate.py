@@ -18,11 +18,11 @@ from __future__ import absolute_import, print_function
 __author__  = "Jens Engel"
 __version__ = "0.1.0"
 
+from jsonschema import validate
 import argparse
 import os.path
 import sys
 import textwrap
-from jsonschema import validate
 try:
     import json
 except ImportError:
@@ -38,28 +38,16 @@ except ImportError:
 HERE = os.path.dirname(__file__)
 TOP  = os.path.normpath(os.path.join(HERE, ".."))
 SCHEMA = os.path.join(TOP, "etc", "json", "behave.json-schema")
-PYTHON_VERSION = sys.version_info[:2]
 
 
 # -----------------------------------------------------------------------------
 # FUNCTIONS:
 # -----------------------------------------------------------------------------
-def json_loads(text, encoding=None):
-    kwargs = {}
-    if encoding and PYTHON_VERSION < (3, 1):
-        # -- NOTE: encoding keyword is deprecated since python 3.1
-        kwargs["encoding"] = encoding
-    return json.loads(text, **kwargs)
-
-def json_load(filename, encoding=None):
+def jsonschema_validate(filename, schema, encoding=None):
     f = open(filename, "r")
     contents = f.read()
     f.close()
-    data = json_loads(contents, encoding=encoding)
-    return data
-
-def jsonschema_validate(filename, schema, encoding=None):
-    data = json_load(filename, encoding=encoding)
+    data = json.loads(contents, encoding=encoding)
     return validate(data, schema)
 
 
@@ -101,7 +89,10 @@ def main(args=None):
         parser.error("SCHEMA not found: %s" % options.schema)
 
     try:
-        schema = json_load(options.schema, encoding=options.encoding)
+        f = open(options.schema, "r")
+        contents = f.read()
+        f.close()
+        schema = json.loads(contents, encoding=options.encoding)
     except Exception as e:
         msg = "ERROR: %s: %s (while loading schema)" % (e.__class__.__name__, e)
         sys.exit(msg)

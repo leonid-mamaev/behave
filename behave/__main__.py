@@ -4,53 +4,55 @@ from __future__ import absolute_import, print_function
 import codecs
 import sys
 import six
-from behave.version import VERSION as BEHAVE_VERSION
-from behave.configuration import Configuration
-from behave.exception import ConstraintError, ConfigError, \
-    FileNotFoundError, InvalidFileLocationError, InvalidFilenameError
+from behave import __version__
+from behave.configuration import Configuration, ConfigError
 from behave.parser import ParserError
 from behave.runner import Runner
-from behave.runner_util import print_undefined_step_snippets, reset_runtime
+from behave.runner_util import print_undefined_step_snippets, reset_runtime, \
+    InvalidFileLocationError, InvalidFilenameError, FileNotFoundError
 from behave.textutil import compute_words_maxsize, text as _text
 
 
-# ---------------------------------------------------------------------------
-# CONSTANTS:
-# ---------------------------------------------------------------------------
 TAG_HELP = """
-Scenarios inherit tags that are declared on the Feature level.
-The simplest TAG_EXPRESSION is simply a tag::
+Scenarios inherit tags declared on the Feature level. The simplest
+TAG_EXPRESSION is simply a tag::
 
-    --tags=@dev
+    --tags @dev
 
 You may even leave off the "@" - behave doesn't mind.
 
-You can also exclude all features / scenarios that have a tag,
-by using boolean NOT::
+When a tag in a tag expression starts with a ~, this represents boolean NOT::
 
-    --tags="not @dev"
+    --tags ~@dev
 
-A tag expression can also use a logical OR::
+A tag expression can have several tags separated by a comma, which represents
+logical OR::
 
-    --tags="@dev or @wip"
+    --tags @dev,@wip
 
-The --tags option can be specified several times,
-and this represents logical AND,
-for instance this represents the boolean expression::
+The --tags option can be specified several times, and this represents logical
+AND, for instance this represents the boolean expression
+"(@foo or not @bar) and @zap"::
 
-    --tags="(@foo or not @bar) and @zap"
+    --tags @foo,~@bar --tags @zap.
 
-You can also exclude several tags::
+Beware that if you want to use several negative tags to exclude several tags
+you have to use logical AND::
 
-    --tags="not (@fixme or @buggy)"
+    --tags ~@fixme --tags ~@buggy.
 """.strip()
 
+# TODO
+# Positive tags can be given a threshold to limit the number of occurrences.
+# Which can be practical if you are practicing Kanban or CONWIP. This will fail
+# if there are more than 3 occurrences of the @qa tag:
+#
+# --tags @qa:3
+# """.strip()
 
-# ---------------------------------------------------------------------------
-# WORK-HORSE:
-# ---------------------------------------------------------------------------
+
 def run_behave(config, runner_class=None):
-    """Run behave with configuration (and optional runner class).
+    """Run behave with configuration.
 
     :param config:          Configuration object for behave.
     :param runner_class:    Runner class to use or none (use Runner class).
@@ -63,7 +65,7 @@ def run_behave(config, runner_class=None):
         runner_class = Runner
 
     if config.version:
-        print("behave " + BEHAVE_VERSION)
+        print("behave " + __version__)
         return 0
 
     if config.tags_help:
@@ -71,11 +73,33 @@ def run_behave(config, runner_class=None):
         return 0
 
     if config.lang_list:
-        print_language_list()
+        from behave.i18n import languages
+        stdout = sys.stdout
+        if six.PY2:
+            # -- PYTHON2: Overcome implicit encode problems (encoding=ASCII).
+            stdout = codecs.getwriter("UTF-8")(sys.stdout)
+        iso_codes = languages.keys()
+        print("Languages available:")
+        for iso_code in sorted(iso_codes):
+            native = languages[iso_code]["native"][0]
+            name = languages[iso_code]["name"][0]
+            print(u"%s: %s / %s" % (iso_code, native, name), file=stdout)
         return 0
 
     if config.lang_help:
-        print_language_help(config)
+        from behave.i18n import languages
+        if config.lang_help not in languages:
+            print("%s is not a recognised language: try --lang-list" % \
+                    config.lang_help)
+            return 1
+        trans = languages[config.lang_help]
+        print(u"Translations for %s / %s" % (trans["name"][0],
+                                             trans["native"][0]))
+        for kw in trans:
+            if kw in "name native".split():
+                continue
+            print(u"%16s: %s" % (kw.title().replace("_", " "),
+                                 u", ".join(w for w in trans[kw] if w != "*")))
         return 0
 
     if not config.format:
@@ -111,8 +135,6 @@ def run_behave(config, runner_class=None):
         print(u"InvalidFileLocationError: %s" % e)
     except InvalidFilenameError as e:
         print(u"InvalidFilenameError: %s" % e)
-    except ConstraintError as e:
-        print(u"ConstraintError: %s" % e)
     except Exception as e:
         # -- DIAGNOSTICS:
         text = _text(e)
@@ -127,60 +149,6 @@ def run_behave(config, runner_class=None):
     if failed:
         return_code = 1
     return return_code
-
-
-# ---------------------------------------------------------------------------
-# MAIN SUPPORT FOR: run_behave()
-# ---------------------------------------------------------------------------
-def print_language_list(stream=None):
-    """Print list of supported languages, like:
-
-    * English
-    * French
-    * German
-    * ...
-    """
-    from behave.i18n import languages
-
-    if stream is None:
-        stream = sys.stdout
-        if six.PY2:
-            # -- PYTHON2: Overcome implicit encode problems (encoding=ASCII).
-            stream = codecs.getwriter("UTF-8")(sys.stdout)
-
-    iso_codes = languages.keys()
-    print("Languages available:")
-    for iso_code in sorted(iso_codes):
-        native = languages[iso_code]["native"]
-        name = languages[iso_code]["name"]
-        print(u"  %s: %s / %s" % (iso_code, native, name), file=stream)
-    return 0
-
-
-def print_language_help(config, stream=None):
-    from behave.i18n import languages
-
-    if stream is None:
-        stream = sys.stdout
-        if six.PY2:
-            # -- PYTHON2: Overcome implicit encode problems (encoding=ASCII).
-            stream = codecs.getwriter("UTF-8")(sys.stdout)
-
-    if config.lang_help not in languages:
-        print("%s is not a recognised language: try --lang-list" % \
-              config.lang_help, file=stream)
-        return 1
-
-    trans = languages[config.lang_help]
-    print(u"Translations for %s / %s" % (trans["name"],
-                                         trans["native"]), file=stream)
-    for kw in trans:
-        if kw in "name native".split():
-            continue
-        print(u"%16s: %s" % (kw.title().replace("_", " "),
-                             u", ".join(w for w in trans[kw] if w != "*")))
-    return 0
-
 
 def print_formatters(title=None, stream=None):
     """Prints the list of available formatters and their description.
@@ -205,9 +173,6 @@ def print_formatters(title=None, stream=None):
         stream.write(schema % (name, formatter_description))
 
 
-# ---------------------------------------------------------------------------
-# MAIN FUNCTIONS:
-# ---------------------------------------------------------------------------
 def main(args=None):
     """Main function to run behave (as program).
 
@@ -215,8 +180,7 @@ def main(args=None):
     :return: 0, if successful. Non-zero, in case of errors/failures.
     """
     config = Configuration(args)
-    return run_behave(config, runner_class=config.runner_class)
-
+    return run_behave(config)
 
 if __name__ == "__main__":
     # -- EXAMPLE: main("--version")

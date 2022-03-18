@@ -74,12 +74,11 @@ class Formatter(object):
 
     Processing Logic (simplified, without ScenarioOutline and skip logic)::
 
-        # -- HINT: Rule processing is missing.
         for feature in runner.features:
             formatter = make_formatters(...)
             formatter.uri(feature.filename)
             formatter.feature(feature)
-            for scenario in feature.walk_scenarios():
+            for scenario in feature.scenarios:
                 formatter.scenario(scenario)
                 for step in scenario.all_steps:
                     formatter.step(step)
@@ -129,21 +128,6 @@ class Formatter(object):
         :param feature:  Feature object (as :class:`behave.model.Feature`)
         """
         pass
-
-    def rule(self, rule):
-        """Called before a rule is executed.
-
-        :param rule:  Rule object (as :class:`behave.model.Rule`)
-        """
-        pass
-
-    # -- PREPARED:
-    # def rule_finished(self, rule):
-    #     """Called after a rule was executed.
-    #
-    #     :param rule:  Rule object (as :class:`behave.model.Rule`)
-    #     """
-    #     pass
 
     def background(self, background):
         """Called when a (Feature) Background is provided.

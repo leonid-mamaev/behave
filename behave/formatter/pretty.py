@@ -6,7 +6,7 @@ from behave.formatter.ansi_escapes import escapes, up
 from behave.formatter.base import Formatter
 from behave.model_core import Status
 from behave.model_describe import escape_cell, escape_triple_quotes
-from behave.textutil import indent, make_indentation, text as _text
+from behave.textutil import indent, text as _text
 import six
 from six.moves import range, zip
 
@@ -66,7 +66,9 @@ class PrettyFormatter(Formatter):
         super(PrettyFormatter, self).__init__(stream_opener, config)
         # -- ENSURE: Output stream is open.
         self.stream = self.open()
-        self.monochrome = self._get_monochrome(config)
+        isatty = getattr(self.stream, "isatty", lambda: True)
+        stream_supports_colors = isatty()
+        self.monochrome = not config.color or not stream_supports_colors
         self.show_source = config.show_source
         self.show_timings = config.show_timings
         self.show_multiline = config.show_multiline
@@ -81,18 +83,9 @@ class PrettyFormatter(Formatter):
         self.indentations = []
         self.step_lines = 0
 
-    def _get_monochrome(self, config):
-        isatty = getattr(self.stream, "isatty", lambda: True)
-        if config.color == 'always':
-            return False
-        elif config.color == 'never':
-            return True
-        else:
-            return not isatty()
 
     def reset(self):
         # -- UNUSED: self.tag_statement = None
-        self.current_rule = None
         self.steps = []
         self._uri = None
         self._match = None
@@ -106,9 +99,7 @@ class PrettyFormatter(Formatter):
 
     def feature(self, feature):
         #self.print_comments(feature.comments, '')
-        self.current_rule = None
-        prefix = ""
-        self.print_tags(feature.tags, prefix)
+        self.print_tags(feature.tags, '')
         self.stream.write(u"%s: %s" % (feature.keyword, feature.name))
         if self.show_source:
             # pylint: disable=redefined-builtin
@@ -117,11 +108,6 @@ class PrettyFormatter(Formatter):
         self.stream.write("\n")
         self.print_description(feature.description, "  ", False)
         self.stream.flush()
-
-    def rule(self, rule):
-        self.replay()
-        self.current_rule = rule
-        self.statement = rule
 
     def background(self, background):
         self.replay()
@@ -190,10 +176,6 @@ class PrettyFormatter(Formatter):
         self.stream.flush()
 
     def table(self, table):
-        prefix = u"      "
-        if self.current_rule:
-            prefix += u"  "
-
         cell_lengths = []
         all_rows = [table.headings] + table.rows
         for row in all_rows:
@@ -207,7 +189,7 @@ class PrettyFormatter(Formatter):
         for i, row in enumerate(all_rows):
             #for comment in row.comments:
             #    self.stream.write("      %s\n" % comment.value)
-            self.stream.write(u"%s|" % prefix)
+            self.stream.write("      |")
             for j, (cell, max_length) in enumerate(zip(row, max_lengths)):
                 self.stream.write(" ")
                 self.stream.write(self.color(cell, None, j))
@@ -220,8 +202,6 @@ class PrettyFormatter(Formatter):
         #self.stream.write('      """' + doc_string.content_type + '\n')
         doc_string = _text(doc_string)
         prefix = u"      "
-        if self.current_rule:
-            prefix += u"  "
         self.stream.write(u'%s"""\n' % prefix)
         doc_string = escape_triple_quotes(indent(doc_string, prefix))
         self.stream.write(doc_string)
@@ -271,16 +251,12 @@ class PrettyFormatter(Formatter):
         if self.statement is None:
             return
 
-        prefix = u"  "
-        if self.current_rule and self.statement.type != "rule":
-            prefix += prefix
-
         self.calculate_location_indentations()
         self.stream.write(u"\n")
         #self.print_comments(self.statement.comments, "  ")
         if hasattr(self.statement, "tags"):
-            self.print_tags(self.statement.tags, prefix)
-        self.stream.write(u"%s%s: %s " % (prefix, self.statement.keyword,
+            self.print_tags(self.statement.tags, u"  ")
+        self.stream.write(u"  %s: %s " % (self.statement.keyword,
                                           self.statement.name))
 
         location = self.indented_text(six.text_type(self.statement.location), True)
@@ -303,11 +279,8 @@ class PrettyFormatter(Formatter):
         text_format = self.format(status.name)
         arg_format = self.arg_format(status.name)
 
-        prefix = u"    "
-        if self.current_rule:
-            prefix += u"  "
         #self.print_comments(step.comments, "    ")
-        self.stream.write(prefix)
+        self.stream.write("    ")
         self.stream.write(text_format.text(step.keyword + " "))
         line_length = 5 + len(step.keyword)
 

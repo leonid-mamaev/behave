@@ -1,11 +1,10 @@
 ======
-behave
+Behave
 ======
 
-
-.. image:: https://github.com/behave/behave/actions/workflows/tests.yml/badge.svg
-    :target: https://github.com/behave/behave/actions/workflows/tests.yml
-    :alt: CI Build Status
+.. image:: https://img.shields.io/travis/behave/behave/master.svg
+    :target: https://travis-ci.org/behave/behave
+    :alt: Travis CI Build Status
 
 .. image:: https://readthedocs.org/projects/behave/badge/?version=latest
     :target: http://behave.readthedocs.io/en/latest/?badge=latest
@@ -14,6 +13,10 @@ behave
 .. image:: https://img.shields.io/pypi/v/behave.svg
     :target: https://pypi.python.org/pypi/behave
     :alt: Latest Version
+
+.. image:: https://img.shields.io/pypi/dm/behave.svg
+    :target: https://pypi.python.org/pypi/behave
+    :alt: Downloads
 
 .. image:: https://img.shields.io/pypi/l/behave.svg
     :target: https://pypi.python.org/pypi/behave/
@@ -77,7 +80,7 @@ In that directory create a file called "example_steps.py" containing:
 
 Run behave:
 
-.. code-block:: console
+.. code-block:: bash
 
     $ behave
     Feature: Showing off behave # features/example.feature:2
@@ -96,10 +99,10 @@ we recommend the `tutorial`_ and then the `feature testing language`_ and
 `api`_ references.
 
 
-.. _`Install *behave*.`: http://behave.readthedocs.io/en/stable/install.html
-.. _`tutorial`: http://behave.readthedocs.io/en/stable/tutorial.html#features
-.. _`feature testing language`: http://behave.readthedocs.io/en/stable/gherkin.html
-.. _`api`: http://behave.readthedocs.io/en/stable/api.html
+.. _`Install *behave*.`: http://pythonhosted.org/behave/install.html
+.. _`tutorial`: http://pythonhosted.org/behave/tutorial.html#features
+.. _`feature testing language`: http://pythonhosted.org/behave/gherkin.html
+.. _`api`: http://pythonhosted.org/behave/api.html
 
 
 More Information

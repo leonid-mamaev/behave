@@ -30,7 +30,7 @@ For example, if you want to use the feature files in the same directory for
 testing the model layer and the UI layer, this can be done by using the
 ``--stage`` option, like with:
 
-.. code-block:: console
+.. code-block:: bash
 
     $ behave --stage=model features/
     $ behave --stage=ui    features/  # NOTE: Normally used on a subset of features.
@@ -128,7 +128,7 @@ using *behave-django*:
     def step_impl(context, url):
         context.browser.visit(context.get_url(url))
 
-.. _Splinter docs: https://splinter.readthedocs.io/en/latest/
+.. _Splinter docs: http://splinter.readthedocs.io/en/latest/
 
 
 Visual Testing
@@ -144,4 +144,4 @@ A list of visual testing tools and services is available from Dave Haeffner's
 `How to Do Visual Testing`_ blog post.
 
 .. _How to Do Visual Testing:
-    https://applitools.com/blog/how-to-do-visual-testing-with-selenium
+    http://testautomation.applitools.com/post/105435804567/how-to-do-visual-testing-with-selenium

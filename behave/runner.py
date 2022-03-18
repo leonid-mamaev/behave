@@ -6,27 +6,30 @@ This module provides Runner class to run behave feature files (or model elements
 from __future__ import absolute_import, print_function, with_statement
 
 import contextlib
+import logging
 import os.path
 import sys
 import warnings
 import weakref
+from typing import Any, Union
 
 import six
 
 from behave._types import ExceptionUtil
 from behave.capture import CaptureController
-from behave.exception import ConfigError
+from behave.configuration import ConfigError
 from behave.formatter._registry import make_formatters
 from behave.runner_util import \
     collect_feature_locations, parse_features, \
     exec_file, load_step_modules, PathManager
 from behave.step_registry import registry as the_step_registry
-from enum import Enum
-from typing import Any, Union
+from selenium.common.exceptions import TimeoutException
+
 from src.config.config import Config
 from src.utils.bdd_reporter.allure_reporter import AllureReporter
 from src.utils.bdd_reporter.console_reporter import ConsoleReporter
 from src.utils.bdd_reporter.reporter_provider import get_reporter
+from src.utils.cached_property import cached_property
 from src.utils.webdriver.webdriver_factory import WebdriverFactory
 from src.utils.webdriver.webdriver_wrapper import WebdriverWrapper
 
@@ -45,22 +48,12 @@ class ContextMaskWarning(UserWarning):
     """Raised if a context variable is being overwritten in some situations.
 
     If the variable was originally set by user code then this will be raised if
-    *behave* overwrites the value.
+    *behave* overwites the value.
 
     If the variable was originally set by *behave* then this will be raised if
-    user code overwrites the value.
+    user code overwites the value.
     """
     pass
-
-
-class ContextMode(Enum):
-    """Used to distinguish between the two usage modes while using the context:
-
-    * BEHAVE: Indicates "behave" (internal) mode
-    * USER: Indicates "user" mode (in steps, hooks, fixtures, ...)
-    """
-    BEHAVE = 1
-    USER = 2
 
 
 class Context(object):
@@ -129,20 +122,30 @@ class Context(object):
       :class:`~behave.model.Row` that is active for the current scenario. It is
       present mostly for debugging, but may be useful otherwise.
 
-    .. attribute:: captured
+    .. attribute:: log_capture
 
-        If any output capture is enabled, provides access to a
-        :class:`~behave.capture.Captured` object that contains a snapshot
-        of all captured data (stdout/stderr/log).
+      If logging capture is enabled then this attribute contains the captured
+      logging as an instance of :class:`~behave.log_capture.LoggingCapture`.
+      It is not present if logging is not being captured.
 
-        .. versionadded:: 1.3.0
+    .. attribute:: stdout_capture
 
-    A :class:`behave.runner.ContextMaskWarning` warning will be raised if user
-    code attempts to overwrite one of these variables, or if *behave* itself
-    tries to overwrite a user-set variable.
+      If stdout capture is enabled then this attribute contains the captured
+      output as a StringIO instance. It is not present if stdout is not being
+      captured.
+
+    .. attribute:: stderr_capture
+
+      If stderr capture is enabled then this attribute contains the captured
+      output as a StringIO instance. It is not present if stderr is not being
+      captured.
+
+    If an attempt made by user code to overwrite one of these variables, or
+    indeed by *behave* to overwite a user-set variable, then a
+    :class:`behave.runner.ContextMaskWarning` warning will be raised.
 
     You may use the "in" operator to test whether a certain value has been set
-    on the context, for example::
+    on the context, for example:
 
         "feature" in context
 
@@ -155,7 +158,8 @@ class Context(object):
     .. _`configuration file section names`: behave.html#configuration-files
     """
     # pylint: disable=too-many-instance-attributes
-    LAYER_NAMES = ["testrun", "feature", "rule", "scenario"]
+    BEHAVE = "behave"
+    USER = "user"
     FAIL_ON_CLEANUP_ERRORS = True
 
     def __init__(self, runner):
@@ -173,19 +177,14 @@ class Context(object):
         self._stack = [d]
         self._record = {}
         self._origin = {}
-        self._mode = ContextMode.BEHAVE
-
-        # -- MODEL ENTITY REFERENCES/SUPPORT:
-        # DISABLED: self.rule = None
-        # DISABLED: self.scenario = None
+        self._mode = self.BEHAVE
         self.feature = None
+        # -- RECHECK: If needed
         self.text = None
         self.table = None
-
-        # -- RUNTIME SUPPORT:
-        # DISABLED: self.stdout_capture = None
-        # DISABLED: self.stderr_capture = None
-        # DISABLED: self.log_capture = None
+        self.stdout_capture = None
+        self.stderr_capture = None
+        self.log_capture = None
         self.fail_on_cleanup_errors = self.FAIL_ON_CLEANUP_ERRORS
         self.__extra: dict = {}
         self._webdriver = None
@@ -276,15 +275,16 @@ class Context(object):
             del cleanup_errors  # -- ENSURE: Release other exception frames.
             six.reraise(*first_cleanup_erro_info)
 
-    def _push(self, layer=None):
-        """Push a new layer on the context stack.
-        HINT: Use layer values: "testrun", "feature", "rule, "scenario".
 
-        :param layer:   Layer name to use (or None).
+    def _push(self, layer_name=None):
+        """Push a new layer on the context stack.
+        HINT: Use layer_name values: "scenario", "feature", "testrun".
+
+        :param layer_name:   Layer name to use (or None).
         """
         initial_data = {"@cleanups": []}
-        if layer:
-            initial_data["@layer"] = layer
+        if layer_name:
+            initial_data["@layer"] = layer_name
         self._stack.insert(0, initial_data)
 
     def _pop(self):
@@ -299,11 +299,11 @@ class Context(object):
 
     def _use_with_behave_mode(self):
         """Provides a context manager for using the context in BEHAVE mode."""
-        return use_context_with_mode(self, ContextMode.BEHAVE)
+        return use_context_with_mode(self, Context.BEHAVE)
 
     def use_with_user_mode(self):
         """Provides a context manager for using the context in USER mode."""
-        return use_context_with_mode(self, ContextMode.USER)
+        return use_context_with_mode(self, Context.USER)
 
     def user_mode(self):
         warnings.warn("Use 'use_with_user_mode()' instead",
@@ -330,11 +330,11 @@ class Context(object):
 
     def _emit_warning(self, attr, params):
         msg = ""
-        if self._mode is ContextMode.BEHAVE and self._origin[attr] is not ContextMode.BEHAVE:
+        if self._mode is self.BEHAVE and self._origin[attr] is not self.BEHAVE:
             msg = "behave runner is masking context attribute '%(attr)s' " \
                   "originally set in %(function)s (%(filename)s:%(line)s)"
-        elif self._mode is ContextMode.USER:
-            if self._origin[attr] is not ContextMode.USER:
+        elif self._mode is self.USER:
+            if self._origin[attr] is not self.USER:
                 msg = "user code is masking context attribute '%(attr)s' " \
                       "originally set by behave"
             elif self._config.verbose:
@@ -356,11 +356,7 @@ class Context(object):
 
     def __getattr__(self, attr):
         if attr[0] == "_":
-            try:
-                return self.__dict__[attr]
-            except KeyError:
-                raise AttributeError(attr)
-
+            return self.__dict__[attr]
         for frame in self._stack:
             if attr in frame:
                 return frame[attr]
@@ -456,20 +452,6 @@ class Context(object):
             self.text = original_text
         return True
 
-    def _select_stack_frame_by_layer(self, layer):
-        """Select context stack frame by layer name.
-
-        :param layer:   Layer name (as string).
-        :return: Selected frame object (if any)
-        :raises: LookupError, if layer was not found.
-        """
-        for frame in self._stack:
-            frame_layer = frame.get("@layer", None)
-            if layer == frame_layer:
-                return frame
-        # -- OOPS, NOT FOUND:
-        raise LookupError("Context.stack: layer=%s not found" % layer)
-
     def add_cleanup(self, cleanup_func, *args, **kwargs):
         """Adds a cleanup function that is called when :meth:`Context._pop()`
         is called. This is intended for user-cleanups.
@@ -477,21 +459,10 @@ class Context(object):
         :param cleanup_func:    Callable function
         :param args:            Args for cleanup_func() call (optional).
         :param kwargs:          Kwargs for cleanup_func() call (optional).
-
-        .. note:: RESERVED :obj:`layer` : optional-string
-
-            The keyword argument ``layer="LAYER_NAME"`` can to be used to
-            assign the :obj:`cleanup_func` to specific a layer on the context stack
-            (instead of the current layer).
-
-            Known layer names are: "testrun", "feature", "rule", "scenario"
-
-        .. seealso:: :attr:`.Context.LAYER_NAMES`
         """
         # MAYBE:
         assert callable(cleanup_func), "REQUIRES: callable(cleanup_func)"
         assert self._stack
-        layer = kwargs.pop("layer", None)
         if args or kwargs:
             def internal_cleanup_func():
                 cleanup_func(*args, **kwargs)
@@ -499,37 +470,20 @@ class Context(object):
             internal_cleanup_func = cleanup_func
 
         current_frame = self._stack[0]
-        if layer:
-            current_frame = self._select_stack_frame_by_layer(layer)
         if cleanup_func not in current_frame["@cleanups"]:
             # -- AVOID DUPLICATES:
             current_frame["@cleanups"].append(internal_cleanup_func)
 
-    @property
-    def captured(self):
-        return self._runner.captured
-
-    def attach(self, mime_type, data):
-        """Embeds data (e.g. a screenshot) in reports for all
-        formatters that support it, such as the JSON formatter.
-
-        :param mime_type:       MIME type of the binary data.
-        :param data:            Bytes-like object to embed.
-        """
-        is_compatible = lambda f: hasattr(f, "embedding")
-        for formatter in filter(is_compatible, self._runner.formatters):
-            formatter.embedding(mime_type, data)
-
 
 @contextlib.contextmanager
 def use_context_with_mode(context, mode):
-    """Switch context to ContextMode.BEHAVE or ContextMode.USER mode.
+    """Switch context to BEHAVE or USER mode.
     Provides a context manager for switching between the two context modes.
 
     .. sourcecode:: python
 
         context = Context()
-        with use_context_with_mode(context, ContextMode.BEHAVE):
+        with use_context_with_mode(context, Context.BEHAVE):
             ...     # Do something
         # -- POSTCONDITION: Original context._mode is restored.
 
@@ -537,7 +491,7 @@ def use_context_with_mode(context, mode):
     :param mode:     Mode to apply to context object.
     """
     # pylint: disable=protected-access
-    assert mode in (ContextMode.BEHAVE, ContextMode.USER)
+    assert mode in (Context.BEHAVE, Context.USER)
     current_mode = context._mode
     try:
         context._mode = mode
@@ -549,7 +503,7 @@ def use_context_with_mode(context, mode):
 
 
 @contextlib.contextmanager
-def scoped_context_layer(context, layer=None):
+def scoped_context_layer(context, layer_name=None):
     """Provides context manager for context layer (push/do-something/pop cycle).
 
     .. code-block::
@@ -559,7 +513,7 @@ def scoped_context_layer(context, layer=None):
     """
     # pylint: disable=protected-access
     try:
-        context._push(layer)
+        context._push(layer_name)
         yield context
     finally:
         context._pop()
@@ -596,14 +550,6 @@ class ModelRunner(object):
           This is set to true when the user aborts a test run
           (:exc:`KeyboardInterrupt` exception). Initially: False.
           Stored as derived attribute in :attr:`Context.aborted`.
-
-    .. attribute:: captured
-
-        If any output capture is enabled, provides access to a
-        :class:`~behave.capture.Captured` object that contains a snapshot
-        of all captured data (stdout/stderr/log).
-
-        .. versionadded:: 1.3.0
     """
     # pylint: disable=too-many-instance-attributes
 
@@ -696,13 +642,6 @@ class ModelRunner(object):
     def teardown_capture(self):
         self.capture_controller.teardown_capture()
 
-    @property
-    def captured(self):
-        """Return the current state of the captured output/logging
-        (as captured object).
-        """
-        return self.capture_controller.captured
-
     def run_model(self, features=None):
         # pylint: disable=too-many-branches
         if not self.context:
@@ -775,18 +714,19 @@ class ModelRunner(object):
 
 
 class Runner(ModelRunner):
-    """Standard test runner for behave:
+    """
+    Standard test runner for behave:
 
       * setup paths
       * loads environment hooks
       * loads step definitions
       * select feature files, parses them and creates model (elements)
     """
-
     def __init__(self, config):
         super(Runner, self).__init__(config)
         self.path_manager = PathManager()
         self.base_dir = None
+
 
     def setup_paths(self):
         # pylint: disable=too-many-branches, too-many-statements
@@ -852,7 +792,7 @@ class Runner(ModelRunner):
         base_dir = new_base_dir
         self.config.base_dir = base_dir
 
-        for dirpath, dirnames, filenames in os.walk(base_dir, followlinks=True):
+        for dirpath, dirnames, filenames in os.walk(base_dir):
             if [fn for fn in filenames if fn.endswith(".feature")]:
                 break
         else:

@@ -1,5 +1,4 @@
-# -*- coding: UTF-8 -*-
-# pylint: disable=invalid-name, bad-continuation, bad-whitespace
+# -*- coding -*-
 """
 Provides step definitions to:
 
@@ -11,18 +10,16 @@ TODO:
 """
 
 from __future__ import absolute_import, print_function
-import contextlib
-import difflib
-import os
-import shutil
-from behave import given, when, then, step, matchers # pylint: disable=no-name-in-module
-from hamcrest import assert_that, equal_to, is_not
+from behave import given, when, then, step, matchers
 from behave4cmd0 import command_shell, command_util, pathutil, textutil
 from behave4cmd0.pathutil import posixpath_normpath
 from behave4cmd0.command_shell_proc import \
     TextProcessor, BehaveWinCommandOutputProcessor
-# NOT-USED: from hamcrest import contains_string
-
+import contextlib
+import difflib
+import os
+import shutil
+from hamcrest import assert_that, equal_to, is_not, contains_string
 
 # -----------------------------------------------------------------------------
 # INIT:
@@ -100,29 +97,6 @@ def step_use_curdir_as_working_directory(context):
     Uses the current directory as working directory
     """
     context.workdir = os.path.abspath(".")
-    command_util.ensure_workdir_exists(context)
-
-@step(u'I use the directory "{directory}" as working directory')
-def step_use_directory_as_working_directory(context, directory):
-    """Uses the directory as new working directory"""
-    command_util.ensure_context_attribute_exists(context, "workdir", None)
-    current_workdir = context.workdir
-    if not current_workdir:
-        current_workdir = os.getcwd()
-
-    if not os.path.isabs(directory):
-        new_workdir = os.path.join(current_workdir, directory)
-        exists_relto_current_dir = os.path.isdir(directory)
-        exists_relto_current_workdir = os.path.isdir(new_workdir)
-        if exists_relto_current_workdir or not exists_relto_current_dir:
-            # -- PREFER: Relative to current workdir
-            workdir = new_workdir
-        else:
-            assert exists_relto_current_workdir
-            workdir = directory
-        workdir = os.path.abspath(workdir)
-
-    context.workdir = workdir
     command_util.ensure_workdir_exists(context)
 
 # -----------------------------------------------------------------------------
@@ -408,15 +382,6 @@ def step_remove_directory(context, directory):
         shutil.rmtree(path_, ignore_errors=True)
     assert_that(not os.path.isdir(path_))
 
-@given(u'I ensure that the directory "{directory}" exists')
-def step_given_ensure_that_the_directory_exists(context, directory):
-    path_ = directory
-    if not os.path.isabs(directory):
-        path_ = os.path.join(context.workdir, os.path.normpath(directory))
-    if not os.path.isdir(path_):
-        os.makedirs(path_)
-    assert_that(os.path.isdir(path_))
-
 @given(u'I ensure that the directory "{directory}" does not exist')
 def step_given_the_directory_should_not_exist(context, directory):
     step_remove_directory(context, directory)
@@ -483,7 +448,6 @@ def step_file_named_filename_exists(context, filename):
     step_file_named_filename_should_exist(context, filename)
 
 @step(u'a file named "{filename}" does not exist')
-@step(u'the file named "{filename}" does not exist')
 def step_file_named_filename_does_not_exist(context, filename):
     """
     Verifies that a file with this filename does not exist.
@@ -506,16 +470,6 @@ def step_file_named_filename_should_not_exist(context, filename):
     command_util.ensure_workdir_exists(context)
     filename_ = pathutil.realpath_with_context(filename, context)
     assert_that(not os.path.exists(filename_))
-
-@step(u'I remove the file "{filename}"')
-def step_remove_file(context, filename):
-    path_ = filename
-    if not os.path.isabs(filename):
-        path_ = os.path.join(context.workdir, os.path.normpath(filename))
-    if os.path.exists(path_) and os.path.isfile(path_):
-        os.remove(path_)
-    assert_that(not os.path.isfile(path_))
-
 
 # -----------------------------------------------------------------------------
 # STEPS FOR FILE CONTENTS:
@@ -542,7 +496,7 @@ def step_file_should_not_contain_text(context, filename, text):
     file_contents = pathutil.read_file_contents(filename, context=context)
     file_contents = file_contents.rstrip()
     textutil.assert_normtext_should_not_contain(file_contents, text)
-    # DISABLED: assert_that(file_contents, is_not(contains_string(text)))
+    # XXX assert_that(file_contents, is_not(contains_string(text)))
 
 
 @then(u'the file "{filename}" should contain')
@@ -575,3 +529,4 @@ def step_I_remove_the_environment_variable(context, env_name):
     os.environ[env_name] = ""
     del context.environ[env_name]
     del os.environ[env_name]
+

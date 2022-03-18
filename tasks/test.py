@@ -9,8 +9,7 @@ import sys
 from invoke import task, Collection
 
 # -- TASK-LIBRARY:
-# PREPARED: from invoke_cleanup import cleanup_tasks, cleanup_dirs, cleanup_files
-from .invoke_cleanup import cleanup_tasks, cleanup_dirs, cleanup_files
+from ._tasklet_cleanup import cleanup_tasks, cleanup_dirs, cleanup_files
 
 
 # ---------------------------------------------------------------------------
@@ -124,7 +123,6 @@ def select_prefix_for(arg, prefixes):
             return prefix
     return os.path.dirname(arg)
 
-
 def select_by_prefix(args, prefixes):
     selected = []
     for arg in args.strip().split():
@@ -133,7 +131,6 @@ def select_by_prefix(args, prefixes):
         if scope:
             selected.append(arg)
     return " ".join(selected)
-
 
 def grouped_by_prefix(args, prefixes):
     """Group behave args by (directory) scope into multiple test-runs."""
@@ -173,7 +170,7 @@ namespace.configure({
         },
     },
     "pytest": {
-        "scopes":   ["tests"],
+        "scopes":   ["test", "tests"],
         "args":   "",
         "options": "",  # -- NOTE:  Overide in configfile "invoke.yaml"
     },

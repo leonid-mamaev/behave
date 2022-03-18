@@ -24,8 +24,6 @@ Tag Expression
 {tag_expression}
 
 
-.. _docid.behave.configuration-files:
-
 Configuration Files
 ===================
 
@@ -71,11 +69,12 @@ The following types are supported (and used):
 
     .. code-block:: ini
 
-        default_tags= (@foo or not @bar) and @zap
+        tags=@foo,~@bar
+            @zap
 
     which is the equivalent of the command-line usage::
 
-        --tags="(@foo or not @bar) and @zap"
+        --tags @foo,~@bar --tags @zap
 
 
 

@@ -32,11 +32,11 @@ Feature: Duplicated Step Definitions
         AmbiguousStep: @given('I call Alice') has already been defined in
         existing step @given('I call Alice') at features/steps/alice_steps.py:3
         """
-    # -- DISABLED: Python 3.8 traceback line numbers differ w/ decorators (+1).
-    # And the command output should contain:
-    #    """
-    #    File "features/steps/alice_steps.py", line 7, in <module>
-    #    """
+    And the command output should contain:
+        """
+        File "features/steps/alice_steps.py", line 7, in <module>
+        @given(u'I call Alice')
+        """
 
 
   Scenario: Duplicated Step Definition in another File
@@ -70,23 +70,14 @@ Feature: Duplicated Step Definitions
         AmbiguousStep: @given('I call Bob') has already been defined in
         existing step @given('I call Bob') at features/steps/bob1_steps.py:3
         """
-    # -- DISABLED: Python 3.8 traceback line numbers differ w/ decorators (+1).
-    # And the command output should contain:
-    #    """
-    #    File "features/steps/bob2_steps.py", line 3, in <module>
-    #    """
+    And the command output should contain:
+        """
+        File "features/steps/bob2_steps.py", line 3, in <module>
+        @given('I call Bob')
+        """
 
-
+  @xfail
   Scenario: Duplicated Same Step Definition via import from another File
-
-    VERIFY THAT: Duplicated step-detection works.
-    Duplicated step-registration occured through a twice imported step-module:
-    First registration may occurs by step-loading the step-module,
-    second registration due to import of first step-module.
-
-    The step registry detects that the same step-function should be registered
-    another time and ignores it (step is already registered).
-
     Given a new working directory
     And a file named "features/steps/charly1_steps.py" with:
       """
