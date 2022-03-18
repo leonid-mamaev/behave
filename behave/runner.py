@@ -22,6 +22,13 @@ from behave.runner_util import \
     exec_file, load_step_modules, PathManager
 from behave.step_registry import registry as the_step_registry
 from enum import Enum
+from typing import Any, Union
+from src.config.config import Config
+from src.utils.bdd_reporter.allure_reporter import AllureReporter
+from src.utils.bdd_reporter.console_reporter import ConsoleReporter
+from src.utils.bdd_reporter.reporter_provider import get_reporter
+from src.utils.webdriver.webdriver_factory import WebdriverFactory
+from src.utils.webdriver.webdriver_wrapper import WebdriverWrapper
 
 if six.PY2:
     # -- USE PYTHON3 BACKPORT: With unicode traceback support.
@@ -180,6 +187,39 @@ class Context(object):
         # DISABLED: self.stderr_capture = None
         # DISABLED: self.log_capture = None
         self.fail_on_cleanup_errors = self.FAIL_ON_CLEANUP_ERRORS
+        self.__extra: dict = {}
+        self._webdriver = None
+        self._reporter = None
+
+    def set_param(self, name: str, value: Any, force: bool = False) -> None:
+        if name in self.__extra and not force:
+            logging.warning(f'Context param "{name}" is already set')
+        logging.info(f'Set context param: "{name}: {type(value).__name__}"')
+        self.__extra[name] = value
+
+    def get_param(self, name: str) -> Any:
+        if name not in self.__extra:
+            available_params = ', '.join(self.__extra.keys())
+            raise ValueError(f'Param "{name}" not found. Available params: {available_params}.')
+        return self.__extra[name]
+
+    def clean_params(self) -> None:
+        self.__extra = {}
+
+    @property
+    def webdriver(self) -> WebdriverWrapper:
+        if self._webdriver is None:
+            self._webdriver = WebdriverFactory.get()
+        return self._webdriver
+
+    @property
+    def reporter(self) -> Union[ConsoleReporter, AllureReporter]:
+        if self._reporter is None:
+            self._reporter = get_reporter(
+                reporter_type=Config.get_reporter_type(),
+                reporter_dir=Config.get_reporter_dir()
+            )
+        return self._reporter
 
     @staticmethod
     def ignore_cleanup_error(context, cleanup_func, exception):
