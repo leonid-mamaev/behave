@@ -117,9 +117,12 @@ setup(
             "modernize >= 0.5",
             "pylint",
         ],
+        'formatters': [
+            "behave-html-formatter",
+        ],
     },
-    # MAYBE-DISABLE: use_2to3
-    use_2to3= bool(python_version >= 3.0),
+    # DISABLED: use_2to3= bool(python_version >= 3.0),
+    # DEPRECATED SINCE: setuptools v58.0.2 (2021-09-06)
     license="BSD",
     classifiers=[
         "Development Status :: 4 - Beta",
@@ -129,12 +132,11 @@ setup(
         "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.3",
-        "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: Jython",
         "Programming Language :: Python :: Implementation :: PyPy",
@@ -143,5 +145,4 @@ setup(
     ],
     zip_safe = True,
 )
-
 
